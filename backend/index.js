@@ -59,7 +59,7 @@ const storage = multer.diskStorage({
 })
 
 const upload = multer({
-    dest: "/app/upload/images",
+    dest: "/app/upload/images/",
     storage:storage
 })
 
@@ -130,29 +130,31 @@ app.post('/addproduct',
     else{
         id=1;
     }
-       
-    const newProduct = new Product({
-        id:id,
-        name: req.body.name,
-        // image: req.body.image,
-        image: `http://localhost:${port}/`+req.file.path,
-        category: req.body.category,
-        new_price: req.body.new_price,
-        old_price: req.body.old_price,
-    });
 
-    console.log(newProduct);
-
-    // Save the new product to the database
-    await newProduct.save();
-
-    console.log("Saved");
-
-    // Respond with success and the product name
-    res.json({
-        success: true,
-        name: req.body.name,
-    });
+    if(req.file){
+        const newProduct = new Product({
+            id:id,
+            name: req.body.name,
+            // image: req.body.image,
+            image: `http://localhost:${port}/`+req.file.path,
+            category: req.body.category,
+            new_price: req.body.new_price,
+            old_price: req.body.old_price,
+        });
+    
+    
+        // Save the new product to the database
+        await newProduct.save();
+    
+        console.log("Saved");
+    
+        // Respond with success and the product name
+        res.json({
+            success: true,
+            name: req.body.name,
+        });
+    }
+    
 });
 
 
