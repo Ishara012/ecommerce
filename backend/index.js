@@ -8,6 +8,7 @@ const path = require('path');
 const cors = require('cors');
 const { connect } = require('http2');
 const { type } = require('os');
+const bodyParser = require('body-parser');
 
 app.use(express.json());
 app.use(cors());
@@ -47,24 +48,34 @@ app.get("/",(req,res)=>{
 // Image storage engine
 
 const storage = multer.diskStorage({
-    destination: './upload/images',
+    destination: (req,res,cb)=>{
+        cb(null,'./upload/images')
+    },
     filename:(req,file,cb)=>{
-        return cb(null,`${file.filename}_${Date.now()}${path.extname(file.originalname)}`)
+        let ext = path.extname(file.originalname);
+        cb(null, Date.now() + ext);
+        // cb(null,`${file.filename}_${Date.now()}${path.extname(file.originalname)}`)
     }
 })
 
-const upload = multer({storage:storage})
+const upload = multer({
+    dest: "/app/upload/images",
+    storage:storage
+})
 
 //creating upload endpoint for images
 
-app.use('/images', express.static('upload/images'));
 
-app.post("/upload", upload.single('product'), (req, res) => {
-    res.json({
-        success: 1,
-        Image_url: `http://localhost:${port}/images/${req.file.filename}`
-    });
-});
+
+//give access to upload/images folder for every one
+app.use('/upload/images', express.static('upload/images/'));
+
+// app.post("/upload", upload.single('product'), (req, res) => {
+//     res.json({
+//         success: 1,
+//         Image_url: `http://localhost:${port}/images/${req.file.filename}`
+//     });
+// });
 
 
 // Define the Product model
@@ -104,7 +115,10 @@ const Product = mongoose.model("Product", {
 });
 
 // Define the POST endpoint for adding a product
-app.post('/addproduct', async (req, res) => {
+app.post('/addproduct',
+    bodyParser.json(),
+    upload.single('image'),
+    async (req, res) => {
     let products = await Product.find({});
     let id;
     if(products.length>0)
@@ -120,7 +134,8 @@ app.post('/addproduct', async (req, res) => {
     const newProduct = new Product({
         id:id,
         name: req.body.name,
-        image: req.body.image,
+        // image: req.body.image,
+        image: `http://localhost:${port}/`+req.file.path,
         category: req.body.category,
         new_price: req.body.new_price,
         old_price: req.body.old_price,
